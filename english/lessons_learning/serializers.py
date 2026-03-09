@@ -19,6 +19,7 @@ class ChapterSerializer(serializers.ModelSerializer):
     examples = GrammarExampleSerializer(many=True, required=False)
     quizzes = GrammarQuizSerializer(many=True, required=False)
     is_locked = serializers.SerializerMethodField()
+    is_completed = serializers.SerializerMethodField()
 
     class Meta:
         model = Chapter
@@ -34,6 +35,17 @@ class ChapterSerializer(serializers.ModelSerializer):
             # Chapter is locked if its order is greater than unlocked_chapter
             return obj.order > profile.unlocked_chapter
         return True
+
+    def get_is_completed(self, obj):
+        request = self.context.get('request')
+        if not request or request.user.is_superuser:
+            return False
+            
+        profile = getattr(request.user, 'profile', None)
+        if profile:
+            # Chapter is completed if its order is less than unlocked_chapter
+            return obj.order < profile.unlocked_chapter
+        return False
 
     def create(self, validated_data):
         examples_data = validated_data.pop('examples', [])
