@@ -62,17 +62,37 @@ class ChapterViewSet(viewsets.ModelViewSet, LearningMixin):
         if self.request.user.is_superuser:
             serializer.save()
         else:
+            from rest_framework.exceptions import PermissionDenied, ValidationError
+            
             # For students, we only allow updating is_completed.
-            # We strip any other data from the serializer's validated_data just in case.
-            allowed_fields = ['is_completed']
+            is_completed = serializer.validated_data.get('is_completed')
+            quiz_score = serializer.validated_data.get('quiz_score')
+
+            # 1. Strip all other fields
+            allowed_fields = ['is_completed', 'quiz_score']
             keys_to_remove = [k for k in serializer.validated_data.keys() if k not in allowed_fields]
             for k in keys_to_remove:
                 serializer.validated_data.pop(k)
             
-            # Additional check: ensure they are only trying to set is_completed to True
-            if serializer.validated_data.get('is_completed') is not True:
-                from rest_framework.exceptions import PermissionDenied
-                raise PermissionDenied("Students can only mark chapters as completed.")
+            # 2. Validation: If marking as completed, must have a passing quiz score
+            if is_completed is True:
+                if quiz_score is None:
+                    raise ValidationError({"quiz_score": "Quiz score is required to complete this chapter."})
+                
+                if quiz_score < 70:
+                    raise PermissionDenied(f"Quiz score {quiz_score}% is too low. You need 70% or higher to complete this chapter.")
+                
+                # Advance student progress
+                profile = getattr(self.request.user, 'profile', None)
+                if profile and serializer.instance.order >= profile.unlocked_chapter:
+                    profile.unlocked_chapter = serializer.instance.order + 1
+                    profile.save()
+            elif is_completed is False:
+                # Students shouldn't be "un-completing" chapters through this endpoint
+                raise PermissionDenied("Chapters cannot be marked as incomplete once finished.")
+            elif 'is_completed' not in serializer.validated_data:
+                # If they hit the endpoint but didn't provide is_completed
+                raise ValidationError("You can only update the 'is_completed' status.")
 
             serializer.save()
 

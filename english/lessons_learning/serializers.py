@@ -20,6 +20,7 @@ class ChapterSerializer(serializers.ModelSerializer):
     quizzes = GrammarQuizSerializer(many=True, required=False)
     is_locked = serializers.SerializerMethodField()
     is_completed = serializers.BooleanField(required=False)
+    quiz_score = serializers.IntegerField(required=False, write_only=True)
 
     class Meta:
         model = Chapter
@@ -70,17 +71,12 @@ class ChapterSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         examples_data = validated_data.pop('examples', [])
         quizzes_data = validated_data.pop('quizzes', [])
+        # quiz_score is write_only and not part of the model, so it won't be in validated_data 
+        # unless we explicitly handle it, but it's better to pop it.
+        validated_data.pop('quiz_score', None)
         is_completed_data = validated_data.pop('is_completed', None)
 
         request = self.context.get('request')
-        
-        # Handle progress advancement if is_completed is set to True
-        if is_completed_data is True and request and not request.user.is_superuser:
-            profile = getattr(request.user, 'profile', None)
-            if profile and instance.order >= profile.unlocked_chapter:
-                # Advance unlocked_chapter only if completing the current or future chapter
-                profile.unlocked_chapter = instance.order + 1
-                profile.save()
 
         # Update Chapter fields (only if superuser or if fields are explicitly provided)
         # Students shouldn't be able to change these, but views.py will secondary-enforce this.
