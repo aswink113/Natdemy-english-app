@@ -19,7 +19,7 @@ class ChapterSerializer(serializers.ModelSerializer):
     examples = GrammarExampleSerializer(many=True, required=False)
     quizzes = GrammarQuizSerializer(many=True, required=False)
     is_locked = serializers.SerializerMethodField()
-    is_completed = serializers.SerializerMethodField()
+    is_completed = serializers.BooleanField(required=False)
 
     class Meta:
         model = Chapter
@@ -36,16 +36,24 @@ class ChapterSerializer(serializers.ModelSerializer):
             return obj.order > profile.unlocked_chapter
         return True
 
-    def get_is_completed(self, obj):
+    def to_representation(self, instance):
+        """Handle reading is_completed based on profile status."""
+        data = super().to_representation(instance)
         request = self.context.get('request')
-        if not request or request.user.is_superuser:
-            return False
+        
+        if request and request.user.is_authenticated:
+            if request.user.is_superuser:
+                data['is_completed'] = False
+            else:
+                profile = getattr(request.user, 'profile', None)
+                if profile:
+                    data['is_completed'] = instance.order < profile.unlocked_chapter
+                else:
+                    data['is_completed'] = False
+        else:
+            data['is_completed'] = False
             
-        profile = getattr(request.user, 'profile', None)
-        if profile:
-            # Chapter is completed if its order is less than unlocked_chapter
-            return obj.order < profile.unlocked_chapter
-        return False
+        return data
 
     def create(self, validated_data):
         examples_data = validated_data.pop('examples', [])
@@ -62,8 +70,20 @@ class ChapterSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         examples_data = validated_data.pop('examples', [])
         quizzes_data = validated_data.pop('quizzes', [])
+        is_completed_data = validated_data.pop('is_completed', None)
 
-        # Update Chapter fields
+        request = self.context.get('request')
+        
+        # Handle progress advancement if is_completed is set to True
+        if is_completed_data is True and request and not request.user.is_superuser:
+            profile = getattr(request.user, 'profile', None)
+            if profile and instance.order >= profile.unlocked_chapter:
+                # Advance unlocked_chapter only if completing the current or future chapter
+                profile.unlocked_chapter = instance.order + 1
+                profile.save()
+
+        # Update Chapter fields (only if superuser or if fields are explicitly provided)
+        # Students shouldn't be able to change these, but views.py will secondary-enforce this.
         instance.order = validated_data.get('order', instance.order)
         instance.title = validated_data.get('title', instance.title)
         instance.grammar_rule_malayalam = validated_data.get('grammar_rule_malayalam', instance.grammar_rule_malayalam)
