@@ -54,7 +54,7 @@ class ChapterViewSet(viewsets.ModelViewSet, LearningMixin):
     def get_permissions(self):
         if self.action in ['list', 'retrieve', 'current_learning']:
             return [IsApprovedStudent()]
-        if self.action in ['partial_update']:
+        if self.action in ['update', 'partial_update']:
             return [IsApprovedStudent()]
         return [IsSuperUser()]
 

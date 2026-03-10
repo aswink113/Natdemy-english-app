@@ -26,8 +26,17 @@ class IsApprovedStudent(permissions.BasePermission):
         # Superusers can access any object
         if request.user.is_superuser:
             return True
-        # Students can only access their own objects (where applicable)
-        return hasattr(obj, 'user') and obj.user == request.user
+            
+        # If the object has a 'user' or 'student' field, enforce ownership
+        # Some models use 'student', others use 'user'
+        owner = getattr(obj, 'user', getattr(obj, 'student', None))
+        if owner:
+            return owner == request.user
+            
+        # If the object has no obvious owner (like Chapter, GrammarExample), 
+        # it is public content. Since has_permission already verified 
+        # the user is an approved student, we allow access.
+        return True
 
 class IsSuperUser(permissions.BasePermission):
     """
