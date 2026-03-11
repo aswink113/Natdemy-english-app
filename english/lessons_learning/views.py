@@ -76,7 +76,7 @@ class ChapterViewSet(viewsets.ModelViewSet, LearningMixin):
             
             # 2. Validation: Completion check
             profile = getattr(self.request.user, 'profile', None)
-            is_already_completed = profile and instance.order < profile.unlocked_chapter if profile else False
+            is_already_completed = profile and serializer.instance.order < profile.unlocked_chapter if profile else False
 
             if is_completed is True:
                 # If they are marking as completed, they need an80% score OR it must already be completed
@@ -88,8 +88,8 @@ class ChapterViewSet(viewsets.ModelViewSet, LearningMixin):
                         raise PermissionDenied(f"Quiz score {quiz_score}% is too low. You need 50% or higher to complete this chapter.")
                     
                     # Advance student progress
-                    if profile and instance.order >= profile.unlocked_chapter:
-                        profile.unlocked_chapter = instance.order + 1
+                    if profile and serializer.instance.order >= profile.unlocked_chapter:
+                        profile.unlocked_chapter = serializer.instance.order + 1
                         profile.save()
             elif is_completed is False:
                 # Students shouldn't be "un-completing" chapters through this endpoint
