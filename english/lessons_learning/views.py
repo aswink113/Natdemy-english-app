@@ -74,26 +74,29 @@ class ChapterViewSet(viewsets.ModelViewSet, LearningMixin):
             for k in keys_to_remove:
                 serializer.validated_data.pop(k)
             
-            # 2. Validation: If marking as completed, must have a passing quiz score
+            # 2. Validation: Completion check
+            profile = getattr(self.request.user, 'profile', None)
+            is_already_completed = profile and instance.order < profile.unlocked_chapter if profile else False
+
             if is_completed is True:
-                if quiz_score is None:
-                    raise ValidationError({"quiz_score": "Quiz score is required to complete this chapter."})
-                
-                if quiz_score < 50:
-                    raise PermissionDenied(f"Quiz score {quiz_score}% is too low. You need 50% or higher to complete this chapter.")
-                
-                # Advance student progress
-                profile = getattr(self.request.user, 'profile', None)
-                if profile and serializer.instance.order >= profile.unlocked_chapter:
-                    profile.unlocked_chapter = serializer.instance.order + 1
-                    profile.save()
+                # If they are marking as completed, they need an80% score OR it must already be completed
+                if not is_already_completed:
+                    if quiz_score is None:
+                        raise ValidationError({"quiz_score": "Quiz score is required to complete this chapter."})
+                    
+                    if quiz_score < 50:
+                        raise PermissionDenied(f"Quiz score {quiz_score}% is too low. You need 50% or higher to complete this chapter.")
+                    
+                    # Advance student progress
+                    if profile and instance.order >= profile.unlocked_chapter:
+                        profile.unlocked_chapter = instance.order + 1
+                        profile.save()
             elif is_completed is False:
                 # Students shouldn't be "un-completing" chapters through this endpoint
-                raise PermissionDenied("Chapters cannot be marked as incomplete once finished.")
-            elif 'is_completed' not in serializer.validated_data:
-                # If they hit the endpoint but didn't provide is_completed
-                raise ValidationError("You can only update the 'is_completed' status.")
-
+                if is_already_completed:
+                    raise PermissionDenied("Chapters cannot be marked as incomplete once finished.")
+            
+            # If they hit the endpoint with other data or no data, just save (which does nothing now)
             serializer.save()
 
 class GrammarExampleViewSet(viewsets.ModelViewSet):
