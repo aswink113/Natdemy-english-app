@@ -41,6 +41,8 @@ static_cdn/
 media/*
 *.log
 local_settings.py
+db.sqlite3
+*.sqlite3
 
 # NPM / Node
 # Dependency directory
