@@ -79,8 +79,8 @@ class ChapterViewSet(viewsets.ModelViewSet, LearningMixin):
                 if quiz_score is None:
                     raise ValidationError({"quiz_score": "Quiz score is required to complete this chapter."})
                 
-                if quiz_score < 70:
-                    raise PermissionDenied(f"Quiz score {quiz_score}% is too low. You need 70% or higher to complete this chapter.")
+                if quiz_score < 50:
+                    raise PermissionDenied(f"Quiz score {quiz_score}% is too low. You need 50% or higher to complete this chapter.")
                 
                 # Advance student progress
                 profile = getattr(self.request.user, 'profile', None)

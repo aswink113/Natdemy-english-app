@@ -185,50 +185,37 @@ class ActivityLog(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.pk:
-            # XP is now ONLY awarded for completion/quiz, not time spent
-            xp_to_add = 0
+            # XP is now flat based on xp_earned field, but only if quiz is passed or no quiz
+            xp_to_add = self.xp_earned
 
-            # Rule: Completion or Quiz score present gives XP
-            if self.quiz_score is not None:
-                if self.xp_earned > 0:
-                    xp_to_add = self.xp_earned
-                else:
-                    # Resolve granular default from config
-                    config = GlobalXPConfig.get_config()
-                    profile = getattr(self.student, 'profile', None)
-                    if profile:
-                        # Get section level and resolve field name
-                        xp_field = f"{self.activity_type.lower()}_xp"
-                        current_section_xp = getattr(profile, xp_field, 0)
-                        level = profile.get_section_level(current_section_xp)
-                        config_field = f"{self.activity_type.lower()}_{level.lower()}_xp"
-                        xp_to_add = getattr(config, config_field, config.points_per_activity)
-                    else:
-                        xp_to_add = config.points_per_activity
-            
-            # Special case for Speaking/CallLogs if needed (usually handled separately 
-            # or via activity log with high score)
+            # Rule: If a quiz is present, it must be passed (>= 50%) to earn XP or unlock content
+            is_quiz_passed = True
+            if self.quiz_score is not None and self.quiz_score < 50:
+                is_quiz_passed = False
+                xp_to_add = 0
             
             try:
                 if hasattr(self.student, 'profile'):
                     profile = self.student.profile
-                    profile.total_xp += xp_to_add
-                    if self.activity_type == 'LISTENING': profile.listening_xp += xp_to_add
-                    elif self.activity_type == 'SPEAKING': profile.speaking_xp += xp_to_add
-                    elif self.activity_type == 'READING': profile.reading_xp += xp_to_add
-                    elif self.activity_type == 'WRITING': profile.writing_xp += xp_to_add
-                    elif self.activity_type == 'LEARNING': profile.learning_xp += xp_to_add
                     
-                    if self.activity_type == 'LEARNING' and self.quiz_score and self.quiz_score >= 70:
-                        profile.unlocked_chapter += 1
-                        # Update state to point to next chapter
-                        from .models import StudentState
-                        state, _ = StudentState.objects.get_or_create(student=self.student)
-                        state.last_activity_type = 'LEARNING'
-                        state.last_item_id = profile.unlocked_chapter
-                        state.save()
+                    if is_quiz_passed:
+                        profile.total_xp += xp_to_add
+                        if self.activity_type == 'LISTENING': profile.listening_xp += xp_to_add
+                        elif self.activity_type == 'SPEAKING': profile.speaking_xp += xp_to_add
+                        elif self.activity_type == 'READING': profile.reading_xp += xp_to_add
+                        elif self.activity_type == 'WRITING': profile.writing_xp += xp_to_add
+                        elif self.activity_type == 'LEARNING': profile.learning_xp += xp_to_add
                         
-                    profile.save()
+                        if self.activity_type == 'LEARNING' and self.quiz_score and self.quiz_score >= 50:
+                            profile.unlocked_chapter += 1
+                            # Update state to point to next chapter
+                            from .models import StudentState
+                            state, _ = StudentState.objects.get_or_create(student=self.student)
+                            state.last_activity_type = 'LEARNING'
+                            state.last_item_id = profile.unlocked_chapter
+                            state.save()
+                        
+                        profile.save()
             except Exception:
                 pass 
         super().save(*args, **kwargs)
