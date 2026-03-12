@@ -3,7 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.contrib.auth.models import User
 from .models import FriendRequest, CallLog, SpeakingTopic, ActiveCall
-from .serializers import FriendRequestSerializer, CallLogSerializer, SpeakingTopicSerializer, ActiveCallSerializer
+from .serializers import FriendRequestSerializer, CallLogSerializer, SpeakingTopicSerializer, ActiveCallSerializer, UserMinimalSerializer, DiscoverStudentSerializer
 import random
 
 class SocialViewSet(viewsets.ReadOnlyModelViewSet):
@@ -121,6 +121,37 @@ class SocialViewSet(viewsets.ReadOnlyModelViewSet):
                 "photo": request.build_absolute_uri(f_profile.profile_photo.url) if f_profile.profile_photo else None
             })
         return Response(data)
+
+    @action(detail=False, methods=['get'])
+    def discover_students(self, request):
+        """Lists potential friends for discovery, excluding existing friends and requests."""
+        from django.db.models import Q
+        user = request.user
+        
+        # 1. Get IDs of people who are already friends
+        friend_ids = user.profile.friends.values_list('id', flat=True)
+        
+        # 2. Get IDs of people with pending/existing requests
+        sent_request_ids = FriendRequest.objects.filter(from_user=user).values_list('to_user_id', flat=True)
+        received_request_ids = FriendRequest.objects.filter(to_user=user).values_list('from_user_id', flat=True)
+        
+        # Combine exclusions
+        excluded_ids = list(friend_ids) + list(sent_request_ids) + list(received_request_ids) + [user.id]
+
+        # 3. Query potential users (Students only, excluding superusers and unapproved)
+        potential_users = User.objects.filter(
+            is_superuser=False,
+            profile__is_approved=True
+        ).exclude(id__in=excluded_ids).order_by('username')
+
+        # Pagination
+        page = self.paginate_queryset(potential_users)
+        if page is not None:
+            serializer = DiscoverStudentSerializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = DiscoverStudentSerializer(potential_users, many=True)
+        return Response(serializer.data)
 
 
 class SpeakingTopicViewSet(viewsets.ModelViewSet):
