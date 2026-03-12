@@ -15,6 +15,7 @@ urlpatterns = [
     path('list-friends/', SocialViewSet.as_view({'get': 'list_friends'}), name='list_friends'),
     path('send-request/', SocialViewSet.as_view({'post': 'send_request'}), name='send_request'),
     path('respond-request/<int:pk>/', SocialViewSet.as_view({'post': 'respond_request'}), name='respond_request'),
+    path('remove-friend/', SocialViewSet.as_view({'post': 'remove_friend'}), name='remove_friend'),
     path('toggle-status/', SocialViewSet.as_view({'post': 'toggle_status'}), name='toggle_status'),
     path('discover_students/', SocialViewSet.as_view({'get': 'discover_students'}), name='discover_students'),
     
