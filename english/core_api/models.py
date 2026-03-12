@@ -3,6 +3,8 @@ from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.core.validators import MaxValueValidator, MinValueValidator
+from django.utils import timezone
+from datetime import timedelta
 import re
 
 # --- GLOBAL XP CONFIG ---
@@ -69,6 +71,7 @@ class StudentProfile(models.Model):
     learning_xp = models.IntegerField(default=0)
     
     current_streak = models.IntegerField(default=0)
+    last_streak_date = models.DateField(null=True, blank=True)
     daily_goal_minutes = models.IntegerField(default=20)
     unlocked_chapter = models.IntegerField(default=1)
     rank_percentage = models.FloatField(default=100.0)
@@ -132,6 +135,35 @@ class StudentProfile(models.Model):
             completed_writing >= total_writing and
             completed_learning >= total_learning
         )
+
+    def validate_streak(self):
+        """
+        Validates and updates the current streak based on the last streak date.
+        Call this method whenever the student completes a significant activity.
+        """
+        today = timezone.localdate()
+        
+        # If no previous date, start the streak
+        if self.last_streak_date is None:
+            self.current_streak = 1
+            self.last_streak_date = today
+            self.save(update_fields=['current_streak', 'last_streak_date'])
+            return self.current_streak
+            
+        # If already updated today, no changes
+        if self.last_streak_date == today:
+            return self.current_streak
+            
+        # If the last streak was exactly yesterday, increment
+        if self.last_streak_date == today - timedelta(days=1):
+            self.current_streak += 1
+        else:
+            # Otherwise, the streak was broken, reset to 1
+            self.current_streak = 1
+            
+        self.last_streak_date = today
+        self.save(update_fields=['current_streak', 'last_streak_date'])
+        return self.current_streak
 
     @property
     def current_level(self):
@@ -237,6 +269,7 @@ class ActivityLog(models.Model):
                             state.last_item_id = profile.unlocked_chapter
                             state.save()
                         
+                        profile.validate_streak()
                         profile.save()
             except Exception:
                 pass 

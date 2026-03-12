@@ -1,4 +1,4 @@
-﻿from rest_framework import serializers
+from rest_framework import serializers
 from django.contrib.auth.models import User
 from .models import StudentProfile, ActivityLog, GlobalXPConfig, StudentState
 
@@ -25,7 +25,8 @@ class StudentProfileSerializer(serializers.ModelSerializer):
             'id', 'username', 'email', 'password', 'student_id', 'profile_photo', 'is_approved',
             'is_online', 'is_dnd', 'total_xp', 'current_level', 'unlocked_chapter',
             'listening_xp', 'speaking_xp', 'reading_xp', 'writing_xp', 'learning_xp',
-            'listening_level', 'speaking_level', 'reading_level', 'writing_level', 'learning_level'
+            'listening_level', 'speaking_level', 'reading_level', 'writing_level', 'learning_level',
+            'current_streak', 'last_streak_date'
         ]
 
     def update(self, instance, validated_data):
