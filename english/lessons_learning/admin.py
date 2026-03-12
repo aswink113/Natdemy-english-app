@@ -11,5 +11,5 @@ class GrammarQuizInline(admin.TabularInline):
 
 @admin.register(Chapter)
 class ChapterAdmin(admin.ModelAdmin):
-    list_display = ('order', 'title')
+    list_display = ('id', 'order', 'title')
     inlines = [GrammarExampleInline, GrammarQuizInline]

@@ -7,6 +7,6 @@ class ListeningQuestionInline(admin.TabularInline):
 
 @admin.register(ListeningLesson)
 class ListeningLessonAdmin(admin.ModelAdmin):
-    list_display = ('title', 'level', 'xp_reward')
+    list_display = ('id', 'title', 'level', 'xp_reward')
     list_filter = ('level',)
     inlines = [ListeningQuestionInline]

@@ -7,6 +7,6 @@ class ReadingQuestionInline(admin.TabularInline):
 
 @admin.register(ReadingStory)
 class ReadingStoryAdmin(admin.ModelAdmin):
-    list_display = ('title', 'level', 'xp_reward')
+    list_display = ('id', 'title', 'level', 'xp_reward')
     list_filter = ('level',)
     inlines = [ReadingQuestionInline]

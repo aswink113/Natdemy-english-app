@@ -13,7 +13,7 @@ class FriendRequestAdmin(admin.ModelAdmin):
 
 @admin.register(SpeakingTopic)
 class SpeakingTopicAdmin(admin.ModelAdmin):
-    list_display = ('text', 'level', 'created_at')
+    list_display = ('id', 'text', 'level', 'created_at')
     list_filter = ('level',)
 
 @admin.register(ActiveCall)
