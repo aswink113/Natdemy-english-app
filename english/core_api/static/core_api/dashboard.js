@@ -342,6 +342,7 @@ async function renderStudents() {
                             <th>Student ID</th>
                             <th>Username</th>
                             <th>Points (XP)</th>
+                            <th>Streak</th>
                             <th>Status</th>
                             <th>Actions</th>
                         </tr>
@@ -353,6 +354,7 @@ async function renderStudents() {
                                 <td style="font-family: monospace; font-size: 0.8rem;">${student.student_id}</td>
                                 <td style="font-weight: 600;">${student.username}</td>
                                 <td>${student.total_xp} XP</td>
+                                <td style="color: #ff9800; font-weight: 600;">🔥 ${student.current_streak || 0}</td>
                                 <td>
                                     <span class="badge ${student.is_approved ? 'badge-approved' : 'badge-pending'}">
                                         ${student.is_approved ? 'Approved' : 'Pending'}
@@ -527,7 +529,7 @@ window.openEntityModal = async function (type, id) {
     let fieldsHtml = '';
     const config = {
         register: ['username', 'password', 'email'],
-        students: ['username', 'email', 'password', 'student_id', 'is_approved'],
+        students: ['username', 'email', 'password', 'student_id', 'current_streak', 'is_approved'],
         listening: ['title', 'youtube_url', 'video_duration_minutes', 'level'],
         reading: ['title', 'level', 'story_content', 'background_image_url'],
         writing: ['level', 'malayalam_meaning', 'correct_sentence', 'extra_words'],
