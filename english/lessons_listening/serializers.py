@@ -11,7 +11,7 @@ class ListeningLessonSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ListeningLesson
-        fields = ['id', 'title', 'youtube_url', 'level', 'xp_reward', 'questions']
+        fields = ['id', 'title', 'youtube_url', 'level', 'video_duration_minutes', 'xp_reward', 'questions']
 
     def create(self, validated_data):
         questions_data = validated_data.pop('questions', [])

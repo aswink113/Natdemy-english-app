@@ -135,21 +135,28 @@ class StudentProfile(models.Model):
 
     @property
     def current_level(self):
-        """Calculates level based on curriculum completion."""
-        # Check if Beginner completed -> Move to Intermediate
-        if self.check_completion_for_level('BEGINNER'):
-            # Check if Intermediate completed -> Move to Professional
-            if self.check_completion_for_level('INTERMEDIATE'):
-                return 'PROFESSIONAL'
+        """Calculates level based on total XP thresholds from GlobalXPConfig."""
+        config = GlobalXPConfig.get_config()
+        if self.total_xp >= config.overall_professional:
+            return 'PROFESSIONAL'
+        if self.total_xp >= config.overall_intermediate:
             return 'INTERMEDIATE'
         return 'BEGINNER'
 
     def get_section_level(self, xp=None):
         """
-        Returns the universal academy level.
-        Section-specific XP is now secondary to curriculum completion.
+        Returns the level for a specific section based on XP thresholds.
+        If no XP is provided, returns the overall current_level.
         """
-        return self.current_level
+        if xp is None:
+            return self.current_level
+        
+        config = GlobalXPConfig.get_config()
+        if xp >= config.section_professional:
+            return 'PROFESSIONAL'
+        if xp >= config.section_intermediate:
+            return 'INTERMEDIATE'
+        return 'BEGINNER'
 
     @property
     def listening_level(self): return self.get_section_level(self.listening_xp)
@@ -194,6 +201,21 @@ class ActivityLog(models.Model):
                 is_quiz_passed = False
                 xp_to_add = 0
             
+            # Enforce video-duration-based time tracking for specific sections
+            try:
+                if self.activity_type == 'LEARNING' and self.item_id:
+                    from lessons_learning.models import Chapter
+                    chapter = Chapter.objects.filter(id=self.item_id).first()
+                    if chapter and chapter.video_duration_minutes > 0:
+                        self.duration_minutes = chapter.video_duration_minutes
+                elif self.activity_type == 'LISTENING' and self.item_id:
+                    from lessons_listening.models import ListeningLesson
+                    lesson = ListeningLesson.objects.filter(id=self.item_id).first()
+                    if lesson and lesson.video_duration_minutes > 0:
+                        self.duration_minutes = lesson.video_duration_minutes
+            except Exception:
+                pass
+
             try:
                 if hasattr(self.student, 'profile'):
                     profile = self.student.profile

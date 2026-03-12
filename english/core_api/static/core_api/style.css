@@ -642,7 +642,7 @@ input:checked+.slider:before {
 
 .xp-arrow-label {
     position: absolute;
-    top: -40px;
+    top: -55px;
     display: flex;
     flex-direction: column;
     align-items: center;

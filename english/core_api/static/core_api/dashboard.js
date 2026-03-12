@@ -528,10 +528,10 @@ window.openEntityModal = async function (type, id) {
     const config = {
         register: ['username', 'password', 'email'],
         students: ['username', 'email', 'password', 'student_id', 'is_approved'],
-        listening: ['title', 'youtube_url', 'level'],
+        listening: ['title', 'youtube_url', 'video_duration_minutes', 'level'],
         reading: ['title', 'level', 'story_content', 'background_image_url'],
         writing: ['level', 'malayalam_meaning', 'correct_sentence', 'extra_words'],
-        'learning/chapters': ['order', 'title', 'grammar_rule_malayalam', 'level'],
+        'learning/chapters': ['order', 'title', 'grammar_rule_malayalam', 'video_url', 'video_duration_minutes', 'level'],
         'social/topics': ['text', 'level']
     };
 
@@ -765,14 +765,15 @@ async function saveEntry(e, type, id) {
             option_2: row.querySelector('.q-opt2').value,
             option_3: row.querySelector('.q-opt3').value,
             correct: parseInt(row.querySelector('.q-correct').value)
-        }));
+        })).filter(q => q.text.trim() !== ""); // Filter out empty questions
     } else if (type === 'learning/chapters') {
         body.examples = Array.from(document.querySelectorAll('.example-row')).map(row => ({
             id: row.querySelector('.ex-id')?.value,
             english_text: row.querySelector('.ex-en').value,
             malayalam_explanation: row.querySelector('.ex-ml').value,
             is_backup: row.querySelector('.ex-backup').checked
-        }));
+        })).filter(ex => ex.english_text.trim() !== "" || ex.malayalam_explanation.trim() !== ""); // Filter empty examples
+        
         body.quizzes = Array.from(document.querySelectorAll('.quiz-row')).map(row => ({
             id: row.querySelector('.qz-id')?.value,
             question_text: row.querySelector('.qz-text').value,
@@ -781,7 +782,7 @@ async function saveEntry(e, type, id) {
             option_c: row.querySelector('.qz-c').value,
             option_d: row.querySelector('.qz-d').value,
             correct_option: parseInt(row.querySelector('.qz-correct').value)
-        }));
+        })).filter(qz => qz.question_text.trim() !== ""); // Filter empty quizzes
     }
 
     const res = await api.fetch(endpoint, {
@@ -791,8 +792,16 @@ async function saveEntry(e, type, id) {
 
     if (res.ok) {
         closeModal();
-        if (type === 'register') renderStudents();
-        else loadPage(type);
+        if (type === 'register') {
+            renderStudents();
+        } else {
+            // Map API types back to Page IDs used by loadPage
+            let pageToLoad = type;
+            if (type === 'learning/chapters') pageToLoad = 'learning';
+            if (type === 'social/topics') pageToLoad = 'speaking-topics';
+            
+            loadPage(pageToLoad);
+        }
     } else {
         // Human-readable error reporting
         let errorMsg = "Update failed:\n";
@@ -1065,8 +1074,10 @@ async function renderXPManagement() {
                             <span>0 XP (Start)</span>
                         </div>
                         <div class="xp-arrow-container">
-                            <div class="xp-arrow-label" style="top: -25px;"><label style="font-size: 0.65rem; color: var(--accent);">PROMOTES TO INT @</label></div>
-                            <div class="xp-arrow-label"><input type="number" name="overall_intermediate" class="xp-arrow-input" value="${config.overall_intermediate}"></div>
+                            <div class="xp-arrow-label">
+                                <label style="font-size: 0.65rem; color: var(--accent); white-space: nowrap;">PROMOTES TO INT @</label>
+                                <input type="number" name="overall_intermediate" class="xp-arrow-input" value="${config.overall_intermediate}">
+                            </div>
                             <div class="xp-arrow"></div>
                         </div>
                         <div class="lvl-card">
@@ -1074,8 +1085,10 @@ async function renderXPManagement() {
                             <span>Min: ${config.overall_intermediate} XP</span>
                         </div>
                         <div class="xp-arrow-container">
-                            <div class="xp-arrow-label" style="top: -25px;"><label style="font-size: 0.65rem; color: var(--accent);">PROMOTES TO PRO @</label></div>
-                            <div class="xp-arrow-label"><input type="number" name="overall_professional" class="xp-arrow-input" value="${config.overall_professional}"></div>
+                            <div class="xp-arrow-label">
+                                <label style="font-size: 0.65rem; color: var(--accent); white-space: nowrap;">PROMOTES TO PRO @</label>
+                                <input type="number" name="overall_professional" class="xp-arrow-input" value="${config.overall_professional}">
+                            </div>
                             <div class="xp-arrow"></div>
                         </div>
                         <div class="lvl-card">

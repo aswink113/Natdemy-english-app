@@ -9,6 +9,8 @@ class Chapter(models.Model):
         choices=[('BEGINNER', 'Beginner'), ('INTERMEDIATE', 'Intermediate'), ('PROFESSIONAL', 'Professional')], 
         default='BEGINNER'
     )
+    video_url = models.URLField(max_length=500, null=True, blank=True)
+    video_duration_minutes = models.FloatField(default=0.0)
     xp_reward = models.IntegerField(default=5)
 
     def __str__(self):

@@ -6,6 +6,7 @@ class ListeningLesson(models.Model):
     title = models.CharField(max_length=100)
     youtube_url = models.URLField()
     level = models.CharField(max_length=20, choices=LEVEL_CHOICES)
+    video_duration_minutes = models.FloatField(default=0.0)
     xp_reward = models.IntegerField(default=5)
     
     def __str__(self):

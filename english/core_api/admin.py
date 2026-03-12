@@ -14,4 +14,30 @@ class ActivityLogAdmin(admin.ModelAdmin):
 
 @admin.register(GlobalXPConfig)
 class GlobalXPConfigAdmin(admin.ModelAdmin):
-    list_display = ('points_per_activity', 'overall_intermediate', 'overall_professional')
+    list_display = ('id', 'overall_intermediate', 'overall_professional', 'section_intermediate', 'section_professional', 'updated_at')
+    fieldsets = (
+        ('Overall Level Thresholds', {
+            'fields': ('overall_intermediate', 'overall_professional')
+        }),
+        ('Section Level Thresholds', {
+            'fields': ('section_intermediate', 'section_professional')
+        }),
+        ('Legacy & Base Rewards', {
+            'fields': ('points_per_activity',)
+        }),
+        ('Listening Rewards', {
+            'fields': ('listening_beginner_xp', 'listening_intermediate_xp', 'listening_professional_xp')
+        }),
+        ('Speaking Rewards', {
+            'fields': ('speaking_beginner_xp', 'speaking_intermediate_xp', 'speaking_professional_xp')
+        }),
+        ('Reading Rewards', {
+            'fields': ('reading_beginner_xp', 'reading_intermediate_xp', 'reading_professional_xp')
+        }),
+        ('Writing Rewards', {
+            'fields': ('writing_beginner_xp', 'writing_intermediate_xp', 'writing_professional_xp')
+        }),
+        ('Grammar (Learning) Rewards', {
+            'fields': ('learning_beginner_xp', 'learning_intermediate_xp', 'learning_professional_xp')
+        }),
+    )
