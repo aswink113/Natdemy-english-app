@@ -45,3 +45,17 @@ class FriendRequestSerializer(serializers.ModelSerializer):
         model = FriendRequest
         fields = ['id', 'from_user', 'to_user', 'from_user_details', 'to_user_details', 'status', 'timestamp']
         read_only_fields = ['id', 'from_user', 'status', 'timestamp']
+
+class SentFriendRequestSerializer(serializers.ModelSerializer):
+    to_user_details = UserMinimalSerializer(source='to_user', read_only=True)
+
+    class Meta:
+        model = FriendRequest
+        fields = ['id', 'to_user', 'to_user_details', 'status', 'timestamp']
+
+class ReceivedFriendRequestSerializer(serializers.ModelSerializer):
+    from_user_details = UserMinimalSerializer(source='from_user', read_only=True)
+
+    class Meta:
+        model = FriendRequest
+        fields = ['id', 'from_user', 'from_user_details', 'status', 'timestamp']

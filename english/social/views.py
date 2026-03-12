@@ -3,7 +3,11 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.contrib.auth.models import User
 from .models import FriendRequest, CallLog, SpeakingTopic, ActiveCall
-from .serializers import FriendRequestSerializer, CallLogSerializer, SpeakingTopicSerializer, ActiveCallSerializer, UserMinimalSerializer, DiscoverStudentSerializer
+from .serializers import (
+    FriendRequestSerializer, CallLogSerializer, SpeakingTopicSerializer, 
+    ActiveCallSerializer, UserMinimalSerializer, DiscoverStudentSerializer,
+    SentFriendRequestSerializer, ReceivedFriendRequestSerializer
+)
 import random
 
 class SocialViewSet(viewsets.ReadOnlyModelViewSet):
@@ -22,10 +26,10 @@ class SocialViewSet(viewsets.ReadOnlyModelViewSet):
         requests = FriendRequest.objects.filter(from_user=request.user)
         page = self.paginate_queryset(requests)
         if page is not None:
-            serializer = self.get_serializer(page, many=True)
+            serializer = SentFriendRequestSerializer(page, many=True)
             return self.get_paginated_response(serializer.data)
             
-        serializer = self.get_serializer(requests, many=True)
+        serializer = SentFriendRequestSerializer(requests, many=True)
         return Response(serializer.data)
 
     @action(detail=False, methods=['get'])
@@ -34,10 +38,10 @@ class SocialViewSet(viewsets.ReadOnlyModelViewSet):
         requests = FriendRequest.objects.filter(to_user=request.user)
         page = self.paginate_queryset(requests)
         if page is not None:
-            serializer = self.get_serializer(page, many=True)
+            serializer = ReceivedFriendRequestSerializer(page, many=True)
             return self.get_paginated_response(serializer.data)
 
-        serializer = self.get_serializer(requests, many=True)
+        serializer = ReceivedFriendRequestSerializer(requests, many=True)
         return Response(serializer.data)
 
     @action(detail=False, methods=['post'])
