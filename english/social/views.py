@@ -16,6 +16,30 @@ class SocialViewSet(viewsets.ReadOnlyModelViewSet):
             Q(from_user=self.request.user) | Q(to_user=self.request.user)
         )
 
+    @action(detail=False, methods=['get'])
+    def sent(self, request):
+        """Returns all friend requests sent by the user."""
+        requests = FriendRequest.objects.filter(from_user=request.user)
+        page = self.paginate_queryset(requests)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+            
+        serializer = self.get_serializer(requests, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'])
+    def received(self, request):
+        """Returns all friend requests received by the user."""
+        requests = FriendRequest.objects.filter(to_user=request.user)
+        page = self.paginate_queryset(requests)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(requests, many=True)
+        return Response(serializer.data)
+
     @action(detail=False, methods=['post'])
     def send_request(self, request):
         to_username = request.data.get('username')
