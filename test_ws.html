@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Test</title>
+</head>
+<body>
+    <h1>WebSocket Test Client</h1>
+    <div id="log"></div>
+
+    <script>
+        const logDiv = document.getElementById("log");
+        function logMsg(msg) {
+            logDiv.innerHTML += "<p>" + msg + "</p>";
+        }
+
+        const socket = new WebSocket("ws://localhost:8000/ws/call/");
+
+        socket.onopen = function(e) {
+            logMsg("[open] Connection established");
+            logMsg("Sending test message...");
+            socket.send(JSON.stringify({
+                "type": "call_message",
+                "message": {"status": "ringing"},
+                "sender": "test_user_1"
+            }));
+        };
+
+        socket.onmessage = function(event) {
+            logMsg(`[message] Data received from server: ${event.data}`);
+        };
+
+        socket.onclose = function(event) {
+            if (event.wasClean) {
+                logMsg(`[close] Connection closed cleanly, code=${event.code} reason=${event.reason}`);
+            } else {
+                logMsg('[close] Connection died');
+            }
+        };
+
+        socket.onerror = function(error) {
+            logMsg(`[error] ${error.message}`);
+        };
+    </script>
+</body>
+</html>

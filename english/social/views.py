@@ -141,10 +141,15 @@ class SocialViewSet(viewsets.ReadOnlyModelViewSet):
         data = []
         for f in friends:
             f_profile = f.profile
+            status_text = "Offline"
+            if f_profile.is_online:
+                status_text = "Do Not Disturb" if f_profile.is_dnd else "Online"
+                
             data.append({
                 "username": f.username,
                 "is_online": f_profile.is_online,
                 "is_dnd": f_profile.is_dnd,
+                "status": status_text,
                 "can_call": f_profile.is_online and not f_profile.is_dnd,
                 "photo": request.build_absolute_uri(f_profile.profile_photo.url) if f_profile.profile_photo else None
             })

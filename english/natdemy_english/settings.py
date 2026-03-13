@@ -20,6 +20,7 @@ ALLOWED_HOSTS = ['*']
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -30,6 +31,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
+    'channels',
     'core_api',
     'lessons_listening',
     'lessons_reading',
@@ -67,8 +69,16 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'natdemy_english.wsgi.application'
+ASGI_APPLICATION = 'natdemy_english.asgi.application'
 
-
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [('127.0.0.1', 6379)],
+        },
+    },
+}
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 

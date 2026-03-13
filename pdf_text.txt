@@ -1,0 +1,104 @@
+Implementing WebSockets in Django using Django
+ Channels
+ 
+1. Install Required Packages
+Install Django Channels and Redis support:
+pip install channels channels-redis
+2. Update Django Settings
+Add Channels to INSTALLED_APPS and configure ASGI:
+INSTALLED_APPS = [
+    "channels",
+]
+ASGI_APPLICATION = "project_name.asgi.application"
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
+        },
+    },
+}
+3. Create WebSocket Consumer
+from channels.generic.websocket import AsyncWebsocketConsumer
+import json
+class ChatConsumer(AsyncWebsocketConsumer):
+    async def connect(self):
+        self.room_group_name = "chat_room"
+        await self.channel_layer.group_add(
+            self.room_group_name,
+            self.channel_name
+        )
+        await self.accept()
+    async def disconnect(self, close_code):
+        await self.channel_layer.group_discard(
+            self.room_group_name,
+            self.channel_name
+        )
+    async def receive(self, text_data):
+        data = json.loads(text_data)
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                "type": "chat_message",
+                "message": data["message"]
+            }
+        )
+    async def chat_message(self, event):
+        await self.send(text_data=json.dumps({
+            "message": event["message"]
+        }))
+4. Create WebSocket Routing
+
+from django.urls import re_path
+from .consumers import ChatConsumer
+websocket_urlpatterns = [
+    re_path(r"ws/chat/$", ChatConsumer.as_asgi()),
+]
+5. Configure ASGI
+import os
+from channels.routing import ProtocolTypeRouter, URLRouter
+from django.core.asgi import get_asgi_application
+from channels.auth import AuthMiddlewareStack
+import app.routing
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
+application = ProtocolTypeRouter({
+    "http": get_asgi_application(),
+    "websocket": AuthMiddlewareStack(
+        URLRouter(
+            app.routing.websocket_urlpatterns
+        )
+    ),
+})
+6. Example WebSocket Client (JavaScript)
+const socket = new WebSocket("ws://yourdomain/ws/chat/");
+socket.onmessage = function(event) {
+    const data = JSON.parse(event.data);
+    console.log(data.message);
+};
+socket.send(JSON.stringify({
+    message: "Hello"
+}));
+7. Production Architecture
+
+Mobile App or Browser
+
+Nginx (reverse proxy)
+
+Daphne or Uvicorn ASGI server
+
+Django Channels
+
+Redis for channel layer
+Best Practices
+
+Use async consumers for performance
+
+Use Redis channel layer for scaling
+
+Keep WebSocket messages small
+
+Use groups for broadcasting
+
+Implement authentication middleware
+
+Use separate workers when scaling
