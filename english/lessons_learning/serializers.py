@@ -19,8 +19,6 @@ class ChapterSerializer(serializers.Serializer):
     title = serializers.CharField(required=False)
     grammar_rule_malayalam = serializers.CharField(required=False)
     level = serializers.CharField(required=False)
-    video_url = serializers.URLField(required=False, allow_null=True, allow_blank=True)
-    video_duration_minutes = serializers.FloatField(required=False)
     xp_reward = serializers.IntegerField(required=False)
     
     # Relationships

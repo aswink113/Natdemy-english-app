@@ -358,7 +358,7 @@ async function renderStudents() {
                         ${students.map((student, index) => `
                             <tr>
                                 <td style="font-family: monospace; font-size: 0.8rem; font-weight: 600;">${student.student_id}</td>
-                                <td style="font-weight: 600;">${student.user.first_name} ${student.user.last_name || ''}</td>
+                                <td style="font-weight: 600;">${student.first_name || student.username} ${student.last_name || ''}</td>
                                 <td style="font-weight: 700; color: var(--accent);">
                                     <i class="fas fa-trophy" style="font-size: 0.7rem;"></i>
                                     #${student.overall_rank || '--'}
@@ -544,7 +544,7 @@ window.openEntityModal = async function (type, id) {
         listening: ['title', 'youtube_url', 'level'],
         reading: ['title', 'level', 'story_content', 'background_image_url'],
         writing: ['level', 'malayalam_meaning', 'correct_sentence', 'extra_words'],
-        'learning/chapters': ['order', 'title', 'grammar_rule_malayalam', 'video_url', 'level'],
+        'learning/chapters': ['order', 'title', 'grammar_rule_malayalam', 'level'],
         'social/topics': ['text', 'level']
     };
 
@@ -838,7 +838,13 @@ async function saveEntry(e, type, id) {
 window.deleteEntry = async function (type, id) {
     if (!confirm("Are you sure you want to delete this?")) return;
     const res = await api.fetch(`/${type}/${id}/`, { method: 'DELETE' });
-    if (res.ok) loadPage(type);
+    if (res.ok) {
+        // Map API types back to Page IDs used by loadPage
+        let pageToLoad = type;
+        if (type === 'learning/chapters') pageToLoad = 'learning';
+        if (type === 'social/topics') pageToLoad = 'speaking-topics';
+        loadPage(pageToLoad);
+    }
 };
 
 async function renderLearning() {

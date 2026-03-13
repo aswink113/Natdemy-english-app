@@ -16,13 +16,15 @@ class UserSerializer(serializers.ModelSerializer):
 class StudentProfileSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source='user.username')
     email = serializers.EmailField(source='user.email')
+    first_name = serializers.CharField(source='user.first_name', read_only=True)
+    last_name = serializers.CharField(source='user.last_name', read_only=True)
     password = serializers.CharField(write_only=True, required=False)
     profile_photo = serializers.ImageField(required=False)
 
     class Meta:
         model = StudentProfile
         fields = [
-            'id', 'username', 'email', 'password', 'student_id', 'profile_photo', 'is_approved',
+            'id', 'username', 'email', 'first_name', 'last_name', 'password', 'student_id', 'profile_photo', 'is_approved',
             'is_online', 'is_dnd', 'total_xp', 'overall_rank', 'unlocked_chapter',
             'listening_xp', 'speaking_xp', 'reading_xp', 'writing_xp', 'learning_xp',
             'listening_level', 'speaking_level', 'reading_level', 'writing_level', 'learning_level',
