@@ -308,7 +308,8 @@ class StudentViewSet(viewsets.GenericViewSet,
         user_stats = {
             "total": StudentProfile.objects.filter(user__is_superuser=False).count(),
             "approved": StudentProfile.objects.filter(is_approved=True, user__is_superuser=False).count(),
-            "pending": StudentProfile.objects.filter(is_approved=False, user__is_superuser=False).count()
+            "pending": StudentProfile.objects.filter(is_approved=False, user__is_superuser=False).count(),
+            "online": StudentProfile.objects.filter(is_online=True, user__is_superuser=False).count()
         }
 
         # 2. Curriculum Stats

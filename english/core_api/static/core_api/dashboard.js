@@ -206,6 +206,11 @@ async function renderHome() {
                 <span class="stat-value">${users.approved}</span>
                 <div class="stat-trend trend-up">Verified Accounts</div>
             </div>
+            <div class="stat-card glass animate-in" style="animation-delay: 0.15s">
+                <span class="stat-label">Online Now</span>
+                <span class="stat-value" style="color: #10b981;">${users.online}</span>
+                <div class="stat-trend trend-up">Currently Active</div>
+            </div>
             <div class="stat-card glass animate-in" style="animation-delay: 0.2s">
                 <span class="stat-label">Pending Approval</span>
                 <span class="stat-value" style="color:var(--warning);">${users.pending}</span>
@@ -341,6 +346,7 @@ async function renderStudents() {
                             <th style="width: 50px;">S.No</th>
                             <th>Student ID</th>
                             <th>Username</th>
+                            <th>Online</th>
                             <th>Points (XP)</th>
                             <th>Streak</th>
                             <th>Status</th>
@@ -353,6 +359,7 @@ async function renderStudents() {
                                 <td style="color: var(--text-muted); font-size: 0.8rem;">${(state.currentPageNum - 1) * 10 + index + 1}</td>
                                 <td style="font-family: monospace; font-size: 0.8rem;">${student.student_id}</td>
                                 <td style="font-weight: 600;">${student.username}</td>
+                                <td>${student.is_online ? '<span style="color: #10b981; font-weight: 600;">🟢 Online</span>' : '<span style="color: var(--danger); font-weight: 600;">🔴 Offline</span>'}</td>
                                 <td>${student.total_xp} XP</td>
                                 <td style="color: #ff9800; font-weight: 600;">🔥 ${student.current_streak || 0}</td>
                                 <td>
@@ -530,10 +537,10 @@ window.openEntityModal = async function (type, id) {
     const config = {
         register: ['username', 'password', 'email'],
         students: ['username', 'email', 'password', 'student_id', 'current_streak', 'is_approved'],
-        listening: ['title', 'youtube_url', 'video_duration_minutes', 'level'],
+        listening: ['title', 'youtube_url', 'level'],
         reading: ['title', 'level', 'story_content', 'background_image_url'],
         writing: ['level', 'malayalam_meaning', 'correct_sentence', 'extra_words'],
-        'learning/chapters': ['order', 'title', 'grammar_rule_malayalam', 'video_url', 'video_duration_minutes', 'level'],
+        'learning/chapters': ['order', 'title', 'grammar_rule_malayalam', 'video_url', 'level'],
         'social/topics': ['text', 'level']
     };
 
