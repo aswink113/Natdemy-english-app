@@ -224,8 +224,7 @@ class ActivityLog(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.pk:
-            # XP is now flat based on xp_earned field, but only if quiz is passed or no quiz
-            xp_to_add = self.xp_earned
+            xp_to_add = getattr(self, 'xp_earned', 0)
 
             # Rule: If a quiz is present, it must be passed (>= 50%) to earn XP or unlock content
             is_quiz_passed = True
@@ -253,6 +252,36 @@ class ActivityLog(models.Model):
                     profile = self.student.profile
                     
                     if is_quiz_passed:
+                        # Use GlobalXPConfig for rewards instead of frontend trust
+                        config = GlobalXPConfig.get_config()
+                        
+                        if self.activity_type == 'LISTENING':
+                            lvl = profile.listening_level
+                            if lvl == 'PROFESSIONAL': xp_to_add = config.listening_professional_xp
+                            elif lvl == 'INTERMEDIATE': xp_to_add = config.listening_intermediate_xp
+                            else: xp_to_add = config.listening_beginner_xp
+                        elif self.activity_type == 'SPEAKING':
+                            lvl = profile.speaking_level
+                            if lvl == 'PROFESSIONAL': xp_to_add = config.speaking_professional_xp
+                            elif lvl == 'INTERMEDIATE': xp_to_add = config.speaking_intermediate_xp
+                            else: xp_to_add = config.speaking_beginner_xp
+                        elif self.activity_type == 'READING':
+                            lvl = profile.reading_level
+                            if lvl == 'PROFESSIONAL': xp_to_add = config.reading_professional_xp
+                            elif lvl == 'INTERMEDIATE': xp_to_add = config.reading_intermediate_xp
+                            else: xp_to_add = config.reading_beginner_xp
+                        elif self.activity_type == 'WRITING':
+                            lvl = profile.writing_level
+                            if lvl == 'PROFESSIONAL': xp_to_add = config.writing_professional_xp
+                            elif lvl == 'INTERMEDIATE': xp_to_add = config.writing_intermediate_xp
+                            else: xp_to_add = config.writing_beginner_xp
+                        elif self.activity_type == 'LEARNING':
+                            lvl = profile.learning_level
+                            if lvl == 'PROFESSIONAL': xp_to_add = config.learning_professional_xp
+                            elif lvl == 'INTERMEDIATE': xp_to_add = config.learning_intermediate_xp
+                            else: xp_to_add = config.learning_beginner_xp
+
+                        self.xp_earned = xp_to_add
                         profile.total_xp += xp_to_add
                         if self.activity_type == 'LISTENING': profile.listening_xp += xp_to_add
                         elif self.activity_type == 'SPEAKING': profile.speaking_xp += xp_to_add
