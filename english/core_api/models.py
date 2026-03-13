@@ -13,25 +13,23 @@ class GlobalXPConfig(models.Model):
     """
     Singleton-style config for XP thresholds and rewards.
     """
-    # Overall Level Thresholds
-    overall_intermediate = models.IntegerField(default=1000)
-    overall_professional = models.IntegerField(default=5000)
+    # Section Specific Thresholds
+    listening_int_threshold = models.IntegerField(default=200)
+    listening_pro_threshold = models.IntegerField(default=1000)
     
-    # Section Level Thresholds
-    section_intermediate = models.IntegerField(default=200)
-    section_professional = models.IntegerField(default=1000)
+    reading_int_threshold = models.IntegerField(default=200)
+    reading_pro_threshold = models.IntegerField(default=1000)
     
-    # Points awarded per activity completion (Legacy Default)
-    points_per_activity = models.IntegerField(default=5)
+    writing_int_threshold = models.IntegerField(default=200)
+    writing_pro_threshold = models.IntegerField(default=1000)
     
-    # Granular Defaults
+    learning_int_threshold = models.IntegerField(default=200)
+    learning_pro_threshold = models.IntegerField(default=1000)
+    
+    # Granular Defaults reward XP (Points earned per activity)
     listening_beginner_xp = models.IntegerField(default=5)
     listening_intermediate_xp = models.IntegerField(default=10)
     listening_professional_xp = models.IntegerField(default=15)
-    
-    speaking_beginner_xp = models.IntegerField(default=5)
-    speaking_intermediate_xp = models.IntegerField(default=10)
-    speaking_professional_xp = models.IntegerField(default=15)
     
     reading_beginner_xp = models.IntegerField(default=5)
     reading_intermediate_xp = models.IntegerField(default=10)
@@ -75,6 +73,14 @@ class StudentProfile(models.Model):
     daily_goal_minutes = models.IntegerField(default=20)
     unlocked_chapter = models.IntegerField(default=1)
     rank_percentage = models.FloatField(default=100.0)
+    
+    # Global Ranking Fields (Rank in the whole student population)
+    overall_rank = models.IntegerField(default=0)
+    listening_rank = models.IntegerField(default=0)
+    reading_rank = models.IntegerField(default=0)
+    writing_rank = models.IntegerField(default=0)
+    learning_rank = models.IntegerField(default=0)
+
     created_at = models.DateTimeField(auto_now_add=True)
     
     profile_photo = models.ImageField(
@@ -165,49 +171,67 @@ class StudentProfile(models.Model):
         self.save(update_fields=['current_streak', 'last_streak_date'])
         return self.current_streak
 
-    @property
-    def current_level(self):
-        """Calculates level based on total XP thresholds from GlobalXPConfig."""
+    def get_section_level(self, section_type, xp):
+        """
+        Returns the level for a specific section based on its own thresholds.
+        """
         config = GlobalXPConfig.get_config()
-        if self.total_xp >= config.overall_professional:
-            return 'PROFESSIONAL'
-        if self.total_xp >= config.overall_intermediate:
-            return 'INTERMEDIATE'
-        return 'BEGINNER'
-
-    def get_section_level(self, xp=None):
-        """
-        Returns the level for a specific section based on XP thresholds.
-        If no XP is provided, returns the overall current_level.
-        """
-        if xp is None:
-            return self.current_level
         
-        config = GlobalXPConfig.get_config()
-        if xp >= config.section_professional:
+        # Determine which thresholds to use
+        int_thresh = getattr(config, f"{section_type.lower()}_int_threshold", 200)
+        pro_thresh = getattr(config, f"{section_type.lower()}_pro_threshold", 1000)
+
+        if xp >= pro_thresh:
             return 'PROFESSIONAL'
-        if xp >= config.section_intermediate:
+        if xp >= int_thresh:
             return 'INTERMEDIATE'
         return 'BEGINNER'
 
     @property
-    def listening_level(self): return self.get_section_level(self.listening_xp)
+    def listening_level(self): return self.get_section_level('listening', self.listening_xp)
 
     @property
-    def speaking_level(self): return self.get_section_level(self.speaking_xp)
+    def speaking_level(self): return "N/A"
 
     @property
-    def reading_level(self): return self.get_section_level(self.reading_xp)
+    def reading_level(self): return self.get_section_level('reading', self.reading_xp)
 
     @property
-    def writing_level(self): return self.get_section_level(self.writing_xp)
+    def writing_level(self): return self.get_section_level('writing', self.writing_xp)
 
     @property
-    def learning_level(self): return self.get_section_level(self.learning_xp)
+    def learning_level(self): return self.get_section_level('learning', self.learning_xp)
+
+    @classmethod
+    def update_global_ranks(cls):
+        """
+        Expensive operation to recalculate ranks for everyone.
+        Ideally run in background or periodically.
+        """
+        from django.db.models import Window, F
+        from django.db.models.functions import Rank
+
+        # 1. Overall Rank
+        profiles = cls.objects.annotate(
+            new_overall_rank=Window(expression=Rank(), order_by=F('total_xp').desc())
+        )
+        for p in profiles:
+            cls.objects.filter(id=p.id).update(overall_rank=p.new_overall_rank)
+
+        # 2. Section Ranks
+        sections = ['listening', 'reading', 'writing', 'learning']
+        for section in sections:
+            field = f"{section}_xp"
+            rank_field = f"{section}_rank"
+            profiles = cls.objects.annotate(
+                new_rank=Window(expression=Rank(), order_by=F(field).desc())
+            )
+            for p in profiles:
+                cls.objects.filter(id=p.id).update(**{rank_field: p.new_rank})
 
     def __str__(self):
         status = "✅" if self.is_approved else "⏳ Pending"
-        return f"{self.user.username} ({self.current_level}) - {status}"
+        return f"{self.user.username} - {status}"
 
 class ActivityLog(models.Model):
     ACTIVITY_CHOICES = [
@@ -260,11 +284,6 @@ class ActivityLog(models.Model):
                             if lvl == 'PROFESSIONAL': xp_to_add = config.listening_professional_xp
                             elif lvl == 'INTERMEDIATE': xp_to_add = config.listening_intermediate_xp
                             else: xp_to_add = config.listening_beginner_xp
-                        elif self.activity_type == 'SPEAKING':
-                            lvl = profile.speaking_level
-                            if lvl == 'PROFESSIONAL': xp_to_add = config.speaking_professional_xp
-                            elif lvl == 'INTERMEDIATE': xp_to_add = config.speaking_intermediate_xp
-                            else: xp_to_add = config.speaking_beginner_xp
                         elif self.activity_type == 'READING':
                             lvl = profile.reading_level
                             if lvl == 'PROFESSIONAL': xp_to_add = config.reading_professional_xp
@@ -280,11 +299,12 @@ class ActivityLog(models.Model):
                             if lvl == 'PROFESSIONAL': xp_to_add = config.learning_professional_xp
                             elif lvl == 'INTERMEDIATE': xp_to_add = config.learning_intermediate_xp
                             else: xp_to_add = config.learning_beginner_xp
+                        else:
+                            xp_to_add = 0
 
                         self.xp_earned = xp_to_add
                         profile.total_xp += xp_to_add
                         if self.activity_type == 'LISTENING': profile.listening_xp += xp_to_add
-                        elif self.activity_type == 'SPEAKING': profile.speaking_xp += xp_to_add
                         elif self.activity_type == 'READING': profile.reading_xp += xp_to_add
                         elif self.activity_type == 'WRITING': profile.writing_xp += xp_to_add
                         elif self.activity_type == 'LEARNING': profile.learning_xp += xp_to_add

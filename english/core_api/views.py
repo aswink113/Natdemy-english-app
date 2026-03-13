@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework import filters
 from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
 
 # Import models & serializers from core_api
@@ -67,7 +68,7 @@ class AnalyticsMixin:
         thresholds = {"BEGINNER": 200, "INTERMEDIATE": 1000, "PROFESSIONAL": float('inf')}
         section_progress = {}
         for section, xp in xp_sections.items():
-            level = profile.get_section_level(xp)
+            level = profile.get_section_level(section, xp)
             next_xp = thresholds.get(level, 1000)
             section_progress[section] = {
                 "current_level": level,
@@ -77,7 +78,7 @@ class AnalyticsMixin:
             }
         
         data = {
-            "overall_level": profile.current_level,
+            "overall_rank": profile.overall_rank,
             "total_xp": profile.total_xp,
             "section_progress": section_progress,
             "chart_data": xp_sections,
@@ -194,7 +195,10 @@ class StudentViewSet(viewsets.GenericViewSet,
     pagination_class = PageNumberPagination
     permission_classes = [IsApprovedStudent]
     parser_classes = (JSONParser, MultiPartParser, FormParser)
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['user__username', 'user__email', 'student_id']
+    ordering_fields = ['total_xp', 'listening_xp', 'reading_xp', 'writing_xp', 'learning_xp', 'overall_rank']
+    ordering = ['overall_rank']
 
     @action(detail=False, methods=['post'], url_path='bulk-import')
     def bulk_import(self, request):

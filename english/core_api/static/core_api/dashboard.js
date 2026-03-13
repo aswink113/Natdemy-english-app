@@ -134,6 +134,7 @@ async function loadPage(pageId, pageNum = 1, searchQuery = state.currentSearch) 
         case 'writing': renderCRUD('writing', 'Writing Tasks'); break;
         case 'speaking-topics': renderCRUD('social/topics', 'Speaking Topics'); break;
         case 'learning': renderLearning(); break;
+        case 'leaderboard': renderLeaderboard(); break;
         case 'xp-manage': renderXPManagement(); break;
     }
 }
@@ -343,9 +344,9 @@ async function renderStudents() {
                 <table>
                     <thead>
                         <tr>
-                            <th style="width: 50px;">S.No</th>
                             <th>Student ID</th>
-                            <th>Username</th>
+                            <th>Name</th>
+                            <th>Rank</th>
                             <th>Online</th>
                             <th>Points (XP)</th>
                             <th>Streak</th>
@@ -356,11 +357,14 @@ async function renderStudents() {
                     <tbody>
                         ${students.map((student, index) => `
                             <tr>
-                                <td style="color: var(--text-muted); font-size: 0.8rem;">${(state.currentPageNum - 1) * 10 + index + 1}</td>
-                                <td style="font-family: monospace; font-size: 0.8rem;">${student.student_id}</td>
-                                <td style="font-weight: 600;">${student.username}</td>
+                                <td style="font-family: monospace; font-size: 0.8rem; font-weight: 600;">${student.student_id}</td>
+                                <td style="font-weight: 600;">${student.user.first_name} ${student.user.last_name || ''}</td>
+                                <td style="font-weight: 700; color: var(--accent);">
+                                    <i class="fas fa-trophy" style="font-size: 0.7rem;"></i>
+                                    #${student.overall_rank || '--'}
+                                </td>
                                 <td>${student.is_online ? '<span style="color: #10b981; font-weight: 600;">🟢 Online</span>' : '<span style="color: var(--danger); font-weight: 600;">🔴 Offline</span>'}</td>
-                                <td>${student.total_xp} XP</td>
+                                <td style="font-weight: 700;">${student.total_xp.toLocaleString()} XP</td>
                                 <td style="color: #ff9800; font-weight: 600;">🔥 ${student.current_streak || 0}</td>
                                 <td>
                                     <span class="badge ${student.is_approved ? 'badge-approved' : 'badge-pending'}">
@@ -838,7 +842,7 @@ window.deleteEntry = async function (type, id) {
 };
 
 async function renderLearning() {
-    elements.pageTitle.innerText = "Grammar Chapters";
+    elements.pageTitle.innerText = "Learning Chapters";
     elements.pageSubtitle.innerText = "Manage nested chapters, examples, and quizzes.";
 
     const res = await api.fetch(`/learning/chapters/?page=${state.currentPageNum}&search=${state.currentSearch}`);
@@ -950,7 +954,7 @@ window.viewStudentReport = async function (studentId) {
             <div style="width:64px; height:64px; border-radius:50%; background:var(--primary); display:flex; align-items:center; justify-content:center; font-size:1.5rem;">🎓</div>
             <div>
                 <h2 style="margin:0;">${profile.username} <span style="font-size: 0.9rem; color:var(--text-muted); font-weight:400;">(${profile.student_id})</span></h2>
-                <p style="margin:0.25rem 0 0; color:var(--text-muted);">${profile.email} • Level: ${profile.current_level} • ${profile.total_xp} Total XP</p>
+                <p style="margin:0.25rem 0 0; color:var(--text-muted);">${profile.email} • ${profile.total_xp} Total XP</p>
             </div>
         </div>
 
@@ -958,9 +962,9 @@ window.viewStudentReport = async function (studentId) {
         <div class="report-grid">
             ${Object.entries(section_summary).map(([section, stats]) => `
                 <div class="report-section-card">
-                    <div style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; margin-bottom:0.5rem;">${section}</div>
+                    <div style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; margin-bottom:0.5rem;">${section === 'grammar' ? 'learning' : section}</div>
                     <div style="font-size:1.25rem; font-weight:700;">${stats.total_time}m</div>
-                    <div style="font-size:0.7rem; color:var(--text-muted);">${stats.sessions} sessions • Avg: ${stats.avg_score}%</div>
+                    <div style="font-size:0.7rem; color:var(--text-muted);">${stats.sessions} sessions • #${profile[section + '_rank'] || '--'} Rank</div>
                 </div>
             `).join('')}
         </div>
@@ -1042,23 +1046,37 @@ async function renderXPManagement() {
                 <h4>${title} Progression</h4>
             </header>
             <form onsubmit="window.saveXPConfig(event)">
+                <div style="margin-bottom: 1rem; padding-bottom: 0.8rem; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <label style="font-size: 0.65rem; color: var(--accent); display: block; margin-bottom: 0.4rem; font-weight: 600;">LEVEL THRESHOLDS</label>
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <div style="flex: 1;">
+                            <label style="font-size: 0.55rem; color: var(--text-muted);">TO INTERMEDIATE</label>
+                            <input type="number" name="${type.toLowerCase()}_int_threshold" class="xp-arrow-input" style="width: 100%;" value="${config[type.toLowerCase() + '_int_threshold'] || 200}">
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="font-size: 0.55rem; color: var(--text-muted);">TO PROFESSIONAL</label>
+                            <input type="number" name="${type.toLowerCase()}_pro_threshold" class="xp-arrow-input" style="width: 100%;" value="${config[type.toLowerCase() + '_pro_threshold'] || 1000}">
+                        </div>
+                    </div>
+                </div>
+                <label style="font-size: 0.65rem; color: var(--accent); display: block; margin-bottom: 0.4rem; font-weight: 600;">ACTIVITY REWARDS</label>
                 <div class="xp-track mini">
                     <div class="lvl-card">
-                        <label style="font-size: 0.65rem; color: var(--text-muted); display: block; margin-bottom: 0.3rem;">REWARD FOR BEG</label>
+                        <label style="font-size: 0.65rem; color: var(--text-muted); display: block; margin-bottom: 0.3rem;">FOR BEG</label>
                         <input type="number" name="${type.toLowerCase()}_beginner_xp" class="xp-arrow-input" value="${config[type.toLowerCase() + '_beginner_xp']}">
                     </div>
                     <div class="xp-arrow-container">
                         <div class="xp-arrow"></div>
                     </div>
                     <div class="lvl-card">
-                        <label style="font-size: 0.65rem; color: var(--text-muted); display: block; margin-bottom: 0.3rem;">REWARD FOR INT</label>
+                        <label style="font-size: 0.65rem; color: var(--text-muted); display: block; margin-bottom: 0.3rem;">FOR INT</label>
                         <input type="number" name="${type.toLowerCase()}_intermediate_xp" class="xp-arrow-input" value="${config[type.toLowerCase() + '_intermediate_xp']}">
                     </div>
                     <div class="xp-arrow-container">
                         <div class="xp-arrow"></div>
                     </div>
                     <div class="lvl-card">
-                        <label style="font-size: 0.65rem; color: var(--text-muted); display: block; margin-bottom: 0.3rem;">REWARD FOR PRO</label>
+                        <label style="font-size: 0.65rem; color: var(--text-muted); display: block; margin-bottom: 0.3rem;">FOR PRO</label>
                         <input type="number" name="${type.toLowerCase()}_professional_xp" class="xp-arrow-input" value="${config[type.toLowerCase() + '_professional_xp']}">
                     </div>
                 </div>
@@ -1071,93 +1089,12 @@ async function renderXPManagement() {
 
     elements.mainView.innerHTML = `
         <div class="animate-in">
-            <!-- Top Section: System Thresholds -->
-            <div class="glass" style="padding: 1.5rem; margin-bottom: 1.5rem;">
-                <h3 style="margin-bottom: 1.5rem; color: var(--accent); font-size: 1.1rem; display: flex; align-items: center; gap: 0.75rem;">
-                    <i class="fas fa-project-diagram"></i> Global XP Engine
-                </h3>
-                <form onsubmit="window.saveXPConfig(event)" style="display: flex; flex-direction: column; gap: 1.5rem;">
-                    <div style="display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap;">
-                        <div style="min-width: 150px;">
-                            <h4 style="margin-bottom: 0.5rem;">Overall Level<br><small style="color:var(--text-muted); font-weight:normal;">Total XP Needed</small></h4>
-                        </div>
-                        <div class="xp-track mini" style="flex: 1; min-width: 400px;">
-                            <div class="lvl-card">
-                                <h4>BEGINNER</h4>
-                                <span>0 XP (Start)</span>
-                            </div>
-                            <div class="xp-arrow-container">
-                                <div class="xp-arrow-label">
-                                    <label style="font-size: 0.65rem; color: var(--accent); white-space: nowrap;">PROMOTES TO INT @</label>
-                                    <input type="number" name="overall_intermediate" class="xp-arrow-input" value="${config.overall_intermediate}">
-                                </div>
-                                <div class="xp-arrow"></div>
-                            </div>
-                            <div class="lvl-card">
-                                <h4>INTERMEDIATE</h4>
-                                <span>Min: ${config.overall_intermediate} XP</span>
-                            </div>
-                            <div class="xp-arrow-container">
-                                <div class="xp-arrow-label">
-                                    <label style="font-size: 0.65rem; color: var(--accent); white-space: nowrap;">PROMOTES TO PRO @</label>
-                                    <input type="number" name="overall_professional" class="xp-arrow-input" value="${config.overall_professional}">
-                                </div>
-                                <div class="xp-arrow"></div>
-                            </div>
-                            <div class="lvl-card">
-                                <h4>PROFESSIONAL</h4>
-                                <span>Min: ${config.overall_professional} XP</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div style="display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.05);">
-                        <div style="min-width: 150px;">
-                            <h4 style="margin-bottom: 0.5rem;">Section Level<br><small style="color:var(--text-muted); font-weight:normal;">Section XP Needed</small></h4>
-                        </div>
-                        <div class="xp-track mini" style="flex: 1; min-width: 400px;">
-                            <div class="lvl-card">
-                                <h4>BEGINNER</h4>
-                                <span>0 XP (Start)</span>
-                            </div>
-                            <div class="xp-arrow-container">
-                                <div class="xp-arrow-label">
-                                    <label style="font-size: 0.65rem; color: var(--accent); white-space: nowrap;">PROMOTES TO INT @</label>
-                                    <input type="number" name="section_intermediate" class="xp-arrow-input" value="${config.section_intermediate}">
-                                </div>
-                                <div class="xp-arrow"></div>
-                            </div>
-                            <div class="lvl-card">
-                                <h4>INTERMEDIATE</h4>
-                                <span>Min: ${config.section_intermediate} XP</span>
-                            </div>
-                            <div class="xp-arrow-container">
-                                <div class="xp-arrow-label">
-                                    <label style="font-size: 0.65rem; color: var(--accent); white-space: nowrap;">PROMOTES TO PRO @</label>
-                                    <input type="number" name="section_professional" class="xp-arrow-input" value="${config.section_professional}">
-                                </div>
-                                <div class="xp-arrow"></div>
-                            </div>
-                            <div class="lvl-card">
-                                <h4>PROFESSIONAL</h4>
-                                <span>Min: ${config.section_professional} XP</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div style="display: flex; justify-content: flex-end;">
-                        <button type="submit" class="btn btn-primary" style="height: 40px; padding: 0 1.5rem;">Save Engine Rules</button>
-                    </div>
-                </form>
-            </div>
-
             <!-- Main Grid: Section Rewards -->
             <div class="xp-dashboard-grid">
                 ${renderSectionCard('Listening', 'fa-headphones', 'Listening')}
-                ${renderSectionCard('Speaking', 'fa-microphone', 'Speaking')}
                 ${renderSectionCard('Reading', 'fa-book-open', 'Reading')}
                 ${renderSectionCard('Writing', 'fa-pen-fancy', 'Writing')}
-                ${renderSectionCard('Grammar', 'fa-graduation-cap', 'Learning')}
+                ${renderSectionCard('Learning', 'fa-brain', 'Learning')}
             </div>
 
             <!-- Bottom Row: Note -->
@@ -1196,3 +1133,111 @@ window.saveXPConfig = async function (e) {
 
 
 // Removed window.saveStudentXP as per manual override removal
+
+async function renderLeaderboard() {
+    elements.pageTitle.innerText = "Global Leaderboard";
+    elements.pageSubtitle.innerText = "Recognizing the top performers across all skill sections.";
+
+    // Sort options: Overall, Listening, Reading, Writing, Learning
+    const sortBy = state.leaderboardSort || 'total_xp';
+    const tabs = [
+        { id: 'total_xp', label: 'Overall', icon: '🏆' },
+        { id: 'listening_xp', label: 'Listening', icon: '🎙️' },
+        { id: 'reading_xp', label: 'Reading', icon: '📖' },
+        { id: 'writing_xp', label: 'Writing', icon: '✍️' },
+        { id: 'learning_xp', label: 'Learning', icon: '🧠' }
+    ];
+
+    const sortLabels = {
+        'total_xp': 'Overall XP',
+        'listening_xp': 'Listening XP',
+        'reading_xp': 'Reading XP',
+        'writing_xp': 'Writing XP',
+        'learning_xp': 'Learning XP'
+    };
+
+    const res = await api.fetch(`/students/?ordering=-${sortBy}&page_size=50`);
+    if (!res.ok) return;
+
+    const students = res.data.results;
+
+    elements.mainView.innerHTML = `
+        <div class="animate-in">
+            <!-- Tab Navigation -->
+            <div class="glass" style="padding: 0.5rem; margin-bottom: 2rem; display: flex; gap: 0.5rem; overflow-x: auto; white-space: nowrap;">
+                ${tabs.map(tab => `
+                    <button class="btn ${sortBy === tab.id ? 'btn-primary' : ''}" 
+                            onclick="state.leaderboardSort = '${tab.id}'; renderLeaderboard()"
+                            style="flex: 1; min-width: 120px; padding: 0.75rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem; 
+                                   background: ${sortBy === tab.id ? 'var(--primary)' : 'rgba(255,255,255,0.05)'};
+                                   transition: all 0.2s ease;">
+                        <span>${tab.icon}</span>
+                        ${tab.label}
+                    </button>
+                `).join('')}
+            </div>
+
+            <div class="table-container glass">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 80px;">Rank</th>
+                            <th>Student</th>
+                            <th>Status (Level)</th>
+                            <th style="text-align: right;">${sortLabels[sortBy]}</th>
+                            <th style="text-align: right;">Total XP</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${students.map((student, index) => {
+                            const rank = index + 1;
+                            const sectionKey = sortBy.replace('_xp', '');
+                            const rankKey = sortBy === 'total_xp' ? 'overall_rank' : `${sectionKey}_rank`;
+                            const levelField = sortBy === 'total_xp' ? 'listening_level' : `${sectionKey}_level`; 
+                            const currentLevel = student[levelField] || 'N/A';
+                            
+                            // Get specific rank from student object if available, else use index
+                            const displayRank = student[rankKey] || rank;
+
+                            return `
+                            <tr style="${displayRank <= 3 ? 'background: rgba(99, 102, 241, 0.05);' : ''}">
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                        ${displayRank === 1 ? '🥇' : displayRank === 2 ? '🥈' : displayRank === 3 ? '🥉' : `<span style="width:20px; text-align:center; opacity: 0.6;">#${displayRank}</span>`}
+                                    </div>
+                                </td>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                        <div style="width: 36px; height: 36px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 0.9rem; font-weight: 700; color: white;">
+                                            ${student.username?.[0]?.toUpperCase() || 'S'}
+                                        </div>
+                                        <div>
+                                            <div style="font-weight: 600;">${student.username}</div>
+                                            <div style="font-size: 0.7rem; color: var(--text-muted); font-family: monospace;">${student.student_id}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge" style="background: rgba(255,255,255,0.05); font-size: 0.7rem; border: 1px solid rgba(255,255,255,0.05);">
+                                        ${sortBy === 'total_xp' ? 'Global Scholar' : currentLevel}
+                                    </span>
+                                </td>
+                                <td style="text-align: right; font-weight: 700; color: var(--accent); font-size: 1.1rem;">
+                                    ${student[sortBy].toLocaleString()}
+                                </td>
+                                <td style="text-align: right; font-weight: 600; opacity: 0.5; font-size: 0.85rem;">
+                                    ${student.total_xp.toLocaleString()} XP
+                                </td>
+                            </tr>
+                        `}).join('')}
+                    </tbody>
+                </table>
+            </div>
+            
+            <div style="margin-top: 1.5rem; text-align: center; color: var(--text-muted); font-size: 0.8rem; opacity: 0.6;">
+                <i class="fas fa-sync-alt"></i> Rankings are updated automatically after every activity.
+            </div>
+        </div>
+    `;
+}
+

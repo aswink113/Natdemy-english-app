@@ -4,12 +4,13 @@ from .models import CallLog, FriendRequest, SpeakingTopic, ActiveCall
 
 class UserMinimalSerializer(serializers.ModelSerializer):
     profile_photo = serializers.ImageField(source='profile.profile_photo', read_only=True)
-    level = serializers.CharField(source='profile.current_level', read_only=True)
     total_xp = serializers.IntegerField(source='profile.total_xp', read_only=True)
+
+    overall_rank = serializers.IntegerField(source='profile.overall_rank', read_only=True)
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'profile_photo', 'level', 'total_xp']
+        fields = ['id', 'username', 'profile_photo', 'total_xp', 'overall_rank']
 
 class DiscoverStudentSerializer(serializers.ModelSerializer):
     profile_photo = serializers.ImageField(source='profile.profile_photo', read_only=True)
