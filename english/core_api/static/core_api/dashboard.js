@@ -1076,36 +1076,78 @@ async function renderXPManagement() {
                 <h3 style="margin-bottom: 1.5rem; color: var(--accent); font-size: 1.1rem; display: flex; align-items: center; gap: 0.75rem;">
                     <i class="fas fa-project-diagram"></i> Global XP Engine
                 </h3>
-                <form onsubmit="window.saveXPConfig(event)" style="display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap;">
-                    <div class="xp-track mini" style="flex: 1; min-width: 400px;">
-                        <div class="lvl-card">
-                            <h4>BEGINNER</h4>
-                            <span>0 XP (Start)</span>
+                <form onsubmit="window.saveXPConfig(event)" style="display: flex; flex-direction: column; gap: 1.5rem;">
+                    <div style="display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap;">
+                        <div style="min-width: 150px;">
+                            <h4 style="margin-bottom: 0.5rem;">Overall Level<br><small style="color:var(--text-muted); font-weight:normal;">Total XP Needed</small></h4>
                         </div>
-                        <div class="xp-arrow-container">
-                            <div class="xp-arrow-label">
-                                <label style="font-size: 0.65rem; color: var(--accent); white-space: nowrap;">PROMOTES TO INT @</label>
-                                <input type="number" name="overall_intermediate" class="xp-arrow-input" value="${config.overall_intermediate}">
+                        <div class="xp-track mini" style="flex: 1; min-width: 400px;">
+                            <div class="lvl-card">
+                                <h4>BEGINNER</h4>
+                                <span>0 XP (Start)</span>
                             </div>
-                            <div class="xp-arrow"></div>
-                        </div>
-                        <div class="lvl-card">
-                            <h4>INTERMEDIATE</h4>
-                            <span>Min: ${config.overall_intermediate} XP</span>
-                        </div>
-                        <div class="xp-arrow-container">
-                            <div class="xp-arrow-label">
-                                <label style="font-size: 0.65rem; color: var(--accent); white-space: nowrap;">PROMOTES TO PRO @</label>
-                                <input type="number" name="overall_professional" class="xp-arrow-input" value="${config.overall_professional}">
+                            <div class="xp-arrow-container">
+                                <div class="xp-arrow-label">
+                                    <label style="font-size: 0.65rem; color: var(--accent); white-space: nowrap;">PROMOTES TO INT @</label>
+                                    <input type="number" name="overall_intermediate" class="xp-arrow-input" value="${config.overall_intermediate}">
+                                </div>
+                                <div class="xp-arrow"></div>
                             </div>
-                            <div class="xp-arrow"></div>
-                        </div>
-                        <div class="lvl-card">
-                            <h4>PROFESSIONAL</h4>
-                            <span>Min: ${config.overall_professional} XP</span>
+                            <div class="lvl-card">
+                                <h4>INTERMEDIATE</h4>
+                                <span>Min: ${config.overall_intermediate} XP</span>
+                            </div>
+                            <div class="xp-arrow-container">
+                                <div class="xp-arrow-label">
+                                    <label style="font-size: 0.65rem; color: var(--accent); white-space: nowrap;">PROMOTES TO PRO @</label>
+                                    <input type="number" name="overall_professional" class="xp-arrow-input" value="${config.overall_professional}">
+                                </div>
+                                <div class="xp-arrow"></div>
+                            </div>
+                            <div class="lvl-card">
+                                <h4>PROFESSIONAL</h4>
+                                <span>Min: ${config.overall_professional} XP</span>
+                            </div>
                         </div>
                     </div>
-                    <button type="submit" class="btn btn-primary" style="height: 40px; padding: 0 1.5rem;">Save Engine</button>
+
+                    <div style="display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.05);">
+                        <div style="min-width: 150px;">
+                            <h4 style="margin-bottom: 0.5rem;">Section Level<br><small style="color:var(--text-muted); font-weight:normal;">Section XP Needed</small></h4>
+                        </div>
+                        <div class="xp-track mini" style="flex: 1; min-width: 400px;">
+                            <div class="lvl-card">
+                                <h4>BEGINNER</h4>
+                                <span>0 XP (Start)</span>
+                            </div>
+                            <div class="xp-arrow-container">
+                                <div class="xp-arrow-label">
+                                    <label style="font-size: 0.65rem; color: var(--accent); white-space: nowrap;">PROMOTES TO INT @</label>
+                                    <input type="number" name="section_intermediate" class="xp-arrow-input" value="${config.section_intermediate}">
+                                </div>
+                                <div class="xp-arrow"></div>
+                            </div>
+                            <div class="lvl-card">
+                                <h4>INTERMEDIATE</h4>
+                                <span>Min: ${config.section_intermediate} XP</span>
+                            </div>
+                            <div class="xp-arrow-container">
+                                <div class="xp-arrow-label">
+                                    <label style="font-size: 0.65rem; color: var(--accent); white-space: nowrap;">PROMOTES TO PRO @</label>
+                                    <input type="number" name="section_professional" class="xp-arrow-input" value="${config.section_professional}">
+                                </div>
+                                <div class="xp-arrow"></div>
+                            </div>
+                            <div class="lvl-card">
+                                <h4>PROFESSIONAL</h4>
+                                <span>Min: ${config.section_professional} XP</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; justify-content: flex-end;">
+                        <button type="submit" class="btn btn-primary" style="height: 40px; padding: 0 1.5rem;">Save Engine Rules</button>
+                    </div>
                 </form>
             </div>
 

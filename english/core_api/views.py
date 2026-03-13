@@ -438,11 +438,16 @@ class StudentViewSet(viewsets.GenericViewSet,
         return Response({"error": "No image provided"}, status=status.HTTP_400_BAD_REQUEST)
 class GlobalXPConfigViewSet(viewsets.ModelViewSet):
     """
-    Admin-only viewset to manage XP Thresholds and Rewards.
+    Manage XP Thresholds and Rewards. 
+    Everyone can view, but only Admins can edit.
     """
     queryset = GlobalXPConfig.objects.all()
     serializer_class = GlobalXPConfigSerializer
-    permission_classes = [permissions.IsAdminUser]
+
+    def get_permissions(self):
+        if self.action == 'current' or self.request.method in permissions.SAFE_METHODS:
+            return [permissions.IsAuthenticated()]
+        return [permissions.IsAdminUser()]
 
     @action(detail=False, methods=['get'])
     def current(self, request):
